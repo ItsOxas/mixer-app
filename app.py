@@ -2,11 +2,8 @@
 
 from datetime import datetime
 import requests
-import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from flask import Flask, jsonify, url_for, session, request, redirect
-import json
-import time
 
 import urllib
 
@@ -21,6 +18,8 @@ AUTH_URL = 'https://accounts.spotify.com/authorize'
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 API_BASE_URL = 'https://api.spotify.com/v1/'
 
+songs_user_one = []
+songs_user_two = []
 app.secret_key = 'asdasdasdasd12312asd-asdsadasdasd'
 app.config['SESSION_COOKIE_NAME'] = 'spotify-login-session'
 
@@ -43,6 +42,17 @@ def login():
     auth_url = f"{AUTH_URL}?{urllib.parse.urlencode(params)}"
 
     return redirect(auth_url)
+
+@app.route('/compute')
+def compute():
+    song_names = []
+
+    for item in songs_user_one:
+        song_names.append(item['name'])
+
+    for item in songs_user_two:
+        song_names.append(item['name'])
+    return jsonify(song_names)
 
 @app.route('/callback')
 def callback():
@@ -82,8 +92,18 @@ def get_playlists():
 
     response = requests.get(API_BASE_URL + 'me/tracks', headers=headers)
     playlists = response.json()
+    songs = []
+    for item in playlists['items']:
+        songs.append(item['track'])
 
-    return jsonify(playlists)
+    global songs_user_one, songs_user_two
+
+    if songs_user_one == []:
+        songs_user_one = songs
+        return redirect('/login')
+    else:
+        songs_user_two = songs
+        return redirect('/compute')
 
 
 @app.route('/refresh-token')
