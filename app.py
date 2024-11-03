@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from datetime import datetime
+import random
 import requests
 from spotipy.oauth2 import SpotifyOAuth
 from flask import Flask, jsonify, url_for, session, request, redirect
@@ -20,6 +21,7 @@ API_BASE_URL = 'https://api.spotify.com/v1/'
 
 songs_user_one = []
 songs_user_two = []
+users_songs = []
 app.secret_key = 'asdasdasdasd12312asd-asdsadasdasd'
 app.config['SESSION_COOKIE_NAME'] = 'spotify-login-session'
 
@@ -52,7 +54,13 @@ def compute():
 
     for item in songs_user_two:
         song_names.append(item['name'])
-    return jsonify(song_names)
+    songs_that_match = []
+    matches = [item for item in songs_user_two if item in songs_user_one]
+
+    for item in matches:
+        songs_that_match.append(item['external_urls']['spotify'])
+    random_url = random.choice(songs_that_match)
+    return redirect(random_url)
 
 @app.route('/callback')
 def callback():
@@ -96,13 +104,14 @@ def get_playlists():
     for item in playlists['items']:
         songs.append(item['track'])
 
-    global songs_user_one, songs_user_two
+    global songs_user_one, songs_user_two, users_songs
 
     if songs_user_one == []:
         songs_user_one = songs
         return redirect('/login')
     else:
         songs_user_two = songs
+        users_songs = songs_user_one + songs_user_two
         return redirect('/compute')
 
 
